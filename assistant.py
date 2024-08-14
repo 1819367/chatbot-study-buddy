@@ -3,7 +3,7 @@ import random
 from openai import OpenAI
 import logging
 import datetime
-import re
+import re #python module for regular expressions, added to remove annotations made by the assistant
 
 log = logging.getLogger("assistant")
 
@@ -40,8 +40,11 @@ def get_message(run_status):
         )
         message = thread_messages.data[0].content[0].text.value
         
+        # check the message thread for annotations, and remove any
         if thread_messages.data[0].content[0].text.annotations:
+            # regular expression pattern being searched for
             pattern = r'【\d+†source】'
+            # search the message content for this expression
             message = re.sub(pattern, '', message)
 
 
@@ -98,9 +101,13 @@ user_input = ""
 
 while True:
     if (user_input == ""):
+        # greet user with a print(), asking for their name and teling them how to end the session.
         print("Assistant: Hello there! Just so you know, you can type exit to end our chat. What's your name? ")
+        # prompt user for their name and assign it to a variable called name.
         name = input("You: ")
+        # greet the user with another print(), referencing their name.
         print("Assistant: Hey, " + name + "! How can I help you?")
+        # prompt the user for their question and assign that to user_input. this is the first request the assistant processes
         user_input = input("You: ")
     else:
         user_input = input("You: ")
@@ -108,6 +115,25 @@ while True:
     if user_input.lower() == "exit":
         print("Goodbye!")
         exit()
+
+    # moderate the user's input before the assistant creates a message
+    moderation_result = client.moderations.create(
+        input = user_input
+    )
+    # removed after printing the moderation object
+    # Print the moderation result and exit
+    # print(moderation_result)
+    # exit()
+
+    # Create/Use a while loop to check if the prompt was flagged
+    while moderation_result.results[0].flagged == True:
+        # inform the user their prompt violated OpenAI's policies
+        print("Assistant: Sorry, your message violated our community guidelines.  Please try a different prompt.")
+        # moderate a new prompt
+        user_input = input("You: ")
+        moderation_result = client.moderations.create(
+            input = user_input
+        )
 
     message = client.beta.threads.messages.create(
         thread_id = thread.id,
