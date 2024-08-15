@@ -120,17 +120,20 @@ while True:
     moderation_result = client.moderations.create(
         input = user_input
     )
-    # removed after printing the moderation object
-    # Print the moderation result and exit
-    # print(moderation_result)
-    # exit()
+   
+    # moderation threshold
+    # hate_threshold = 0.01
+    self_harm_threshold = .01
 
-    # Create/Use a while loop to check if the prompt was flagged
-    while moderation_result.results[0].flagged == True:
-        # inform the user their prompt violated OpenAI's policies
+    # Create/Use a while loop to check if the category score is more than the threshold set or is flagged
+    while moderation_result.results[0].category_scores.self_harm > self_harm_threshold or moderation_result.results[0].flagged == True:
         print("Assistant: Sorry, your message violated our community guidelines.  Please try a different prompt.")
         # moderate a new prompt
         user_input = input("You: ")
+        # added code to exit in the loop
+        if user_input.lower() == "exit":
+            print("Goodbye!")
+            exit()
         moderation_result = client.moderations.create(
             input = user_input
         )
